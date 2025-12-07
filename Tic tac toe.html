@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tic Tac Toe — Red vs Blue</title>
+<style>
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #061b2b, #0e3a4e);
+    color: white;
+    font-family: "Poppins", Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    transition: all 0.4s;
+  }
+  .page {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .active { display: flex; }
+  h1, h2 { margin: 10px; }
+  button {
+    margin: 10px;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    color: white;
+    transition: all 0.3s ease;
+  }
+  .red { background: #ff4b4b; }
+  .blue { background: #2fa7ff; color: #012; }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    gap: 10px;
+    margin-top: 15px;
+  }
+  .cell {
+    width: 100px; height: 100px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    font-size: 36px; font-weight: bold;
+    cursor: pointer; transition: 0.2s;
+  }
+  .cell:hover { background: rgba(255,255,255,0.15); }
+  .mark-red { color: #ff4b4b; }
+  .mark-blue { color: #2fa7ff; }
+  #hint { margin-top: 10px; opacity: 0.8; }
+
+  /* 🎨 Level Page Styling */
+  #page2 {
+    background: linear-gradient(135deg, #1b2845, #2b5876, #4e4376);
+    animation: fadeIn 0.6s ease;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(255,255,255,0.2);
+  }
+  #page2 h2 {
+    background: linear-gradient(90deg, #ff4b4b, #2fa7ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 28px;
+    margin-bottom: 25px;
+  }
+  .level-btn {
+    width: 180px;
+    font-weight: bold;
+    font-size: 18px;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+  }
+  .easy { background: linear-gradient(90deg, #a8e063, #56ab2f); }
+  .medium { background: linear-gradient(90deg, #f7971e, #ffd200); color: #222; }
+  .hard { background: linear-gradient(90deg, #fc4a1a, #f7b733); }
+  .extra { background: linear-gradient(90deg, #8e2de2, #4a00e0); }
+  .level-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 15px rgba(255,255,255,0.4);
+  }
+  @keyframes fadeIn {
+    from {opacity:0; transform: scale(0.95);}
+    to {opacity:1; transform: scale(1);}
+  }
+</style>
+</head>
+<body>
+
+<!-- 1️⃣ Start Page -->
+<div id="page1" class="page active">
+  <h1>Tic Tac Toe 🎮</h1>
+  <h3>Choose Play Mode</h3>
+  <button class="red" onclick="selectMode('friend')">Play with Friend</button>
+  <button class="blue" onclick="selectMode('computer')">Play with Computer</button>
+</div>
+
+<!-- 2️⃣ Level Page (Now Colorful!) -->
+<div id="page2" class="page">
+  <h2>Choose Your Level ⚡</h2>
+  <button class="level-btn easy" onclick="chooseLevel('easy')">Easy 🌿</button>
+  <button class="level-btn medium" onclick="chooseLevel('medium')">Medium 🌞</button>
+  <button class="level-btn hard" onclick="chooseLevel('hard')">Hard 🔥</button>
+  <button class="level-btn extra" onclick="chooseLevel('extraHard')">Extra Hard 💀</button>
+  <button class="blue" onclick="goBack(1)">⬅️ Back</button>
+</div>
+
+<!-- 3️⃣ Game Page -->
+<div id="page3" class="page">
+  <h2 id="gameTitle">Tic Tac Toe</h2>
+  <div id="board"></div>
+  <p id="turn">Turn: Red</p>
+  <p id="hint"></p>
+  <button class="red" onclick="repeatLevel()">Repeat Level</button>
+</div>
+
+<!-- 4️⃣ Result Page -->
+<div id="page4" class="page">
+  <h1 id="resultTitle"></h1>
+  <p id="resultSub"></p>
+  <div>
+    <button class="red" onclick="repeatLevel()">Repeat Level</button>
+    <button class="blue" onclick="nextLevel()">Next Level</button>
+  </div>
+</div>
+
+<script>
+let page = 1;
+let mode = "friend";
+let level = "easy";
+let board = Array(9).fill(null);
+let turn = "red";
+let winner = null;
+let over = false;
+
+const WIN_COMBO = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+function showPage(n) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page'+n).classList.add('active');
+  page = n;
+}
+function selectMode(m){ mode = m; showPage(2); }
+function chooseLevel(lvl){ level = lvl; showPage(3); startGame(); }
+
+function startGame(){
+  board = Array(9).fill(null);
+  turn = "red"; over = false;
+  document.getElementById('turn').innerText = "Turn: Red";
+  const hints = {
+    easy:"Hint: Start with corners.",
+    medium:"Hint: Watch your opponent’s move.",
+    hard:"Hint: Think 2 steps ahead.",
+    extraHard:"Hint: Focus on center control."
+  };
+  document.getElementById('hint').innerText = hints[level];
+  const boardDiv = document.getElementById('board');
+  boardDiv.innerHTML = "";
+  for(let i=0;i<9;i++){
+    const cell = document.createElement('div');
+    cell.className = "cell";
+    cell.addEventListener("click", ()=>clickCell(i));
+    boardDiv.appendChild(cell);
+  }
+}
+function clickCell(i){
+  if(over || board[i]) return;
+  board[i] = turn;
+  renderBoard();
+  if(checkWin(turn)){ winner = turn; showResult(); return; }
+  if(board.every(c=>c)){ winner = "draw"; showResult(); return; }
+  turn = (turn === "red") ? "blue" : "red";
+  document.getElementById('turn').innerText = "Turn: " + turn.charAt(0).toUpperCase() + turn.slice(1);
+  if(mode === "computer" && turn === "blue") setTimeout(aiMove, 500);
+}
+function aiMove(){
+  let empty = board.map((v,i)=>v?null:i).filter(x=>x!==null);
+  let move = empty[Math.floor(Math.random()*empty.length)];
+  board[move] = "blue";
+  renderBoard();
+  if(checkWin("blue")){ winner="blue"; showResult(); return; }
+  if(board.every(c=>c)){ winner="draw"; showResult(); return; }
+  turn="red"; document.getElementById('turn').innerText="Turn: Red";
+}
+function renderBoard(){
+  document.querySelectorAll('.cell').forEach((c,i)=>{
+    c.innerText = "";
+    c.classList.remove("mark-red","mark-blue");
+    if(board[i]==="red"){ c.innerText="O"; c.classList.add("mark-red"); }
+    else if(board[i]==="blue"){ c.innerText="X"; c.classList.add("mark-blue"); }
+  });
+}
+function checkWin(p){
+  return WIN_COMBO.some(([a,b,c]) => board[a]===p && board[b]===p && board[c]===p);
+}
+function showResult(){
+  over = true; showPage(4);
+  const title = document.getElementById("resultTitle");
+  const sub = document.getElementById("resultSub");
+  if(winner === "red"){
+    title.innerText = "🎉 Congratulations Red Wins!";
+    sub.innerText = "😢 Blue Loses";
+  } else if(winner === "blue"){
+    title.innerText = "🎉 Congratulations Blue Wins!";
+    sub.innerText = "😢 Red Loses";
+  } else {
+    title.innerText = "😐 It’s a Draw!";
+    sub.innerText = "Try again!";
+  }
+}
+function repeatLevel(){ showPage(3); startGame(); }
+function nextLevel(){
+  const levels = ["easy","medium","hard","extraHard"];
+  let i = levels.indexOf(level);
+  level = levels[(i+1)%levels.length];
+  showPage(3); startGame();
+}
+function goBack(n){ showPage(n); }
+</script>
+</body>  <button class="level-btn easy" onclick="chooseLevel('easy')">Easy 🌿</button>
+
+</html>>
